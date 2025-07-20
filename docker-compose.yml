@@ -28,7 +28,8 @@ services:
       - app-network
 
   db:
-    image: postgres:17
+    image: postgres
+    container_name: assignment12DB
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -48,6 +49,7 @@ services:
 
   pgadmin:
     image: dpage/pgadmin4
+    container_name: assignment12pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@example.com
       PGADMIN_DEFAULT_PASSWORD: admin
