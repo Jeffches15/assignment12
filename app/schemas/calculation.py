@@ -87,6 +87,12 @@ class CalculationUpdate(BaseModel):
         example=[42, 7],
         min_items=2
     )
+    type: Optional[CalculationType] = Field(
+        default=None,
+        description="Updated type of calculation",
+        example="subtraction"
+    )
+
     # add something to make it so types change? like subtraction to division
 
     @model_validator(mode='after')
