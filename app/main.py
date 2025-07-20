@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.auth.dependencies import get_current_active_user
 from app.models.calculation import Calculation
 from app.models.user import User
-from app.schemas.calculation import CalculationBase, CalculationResponse, CalculationUpdate
+from app.schemas.calculation import CalculationBase, CalculationResponse, CalculationType, CalculationUpdate
 from app.schemas.token import TokenResponse
 from app.schemas.user import UserCreate, UserResponse, UserLogin
 from app.database import Base, get_db, engine
@@ -193,7 +193,6 @@ def get_calculation(
         raise HTTPException(status_code=404, detail="Calculation not found.")
     return calculation
 
-# Edit / Update a Calculation (the entire calculation)
 @app.put("/calculations/{calc_id}", response_model=CalculationResponse, tags=["calculations"])
 def update_calculation(
     calc_id: str,
@@ -212,13 +211,40 @@ def update_calculation(
     if not calculation:
         raise HTTPException(status_code=404, detail="Calculation not found.")
 
-    # add something to make it so types change? like subtraction to division
+    inputs = calculation_update.inputs if calculation_update.inputs is not None else calculation.inputs
+    new_type = calculation_update.type if calculation_update.type is not None else calculation.type
+
+    # Recreate calculation if type changed
+    if calculation_update.type is not None and calculation_update.type != calculation.type:
+        try:
+            new_calc = Calculation.create(
+                calculation_type=new_type,
+                user_id=calculation.user_id,
+                inputs=inputs
+            )
+            new_calc.id = calculation.id  # preserve the same ID
+            new_calc.created_at = calculation.created_at
+            new_calc.updated_at = datetime.utcnow()
+
+            # Calculate and set the new result
+            new_calc.result = new_calc.get_result()
+
+            db.delete(calculation)  # delete old calculation
+            db.add(new_calc)       # add new calculation of correct subclass
+            db.commit()
+            db.refresh(new_calc)
+            return new_calc
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid calculation type.")
+
+    # Update inputs and result if inputs changed
     if calculation_update.inputs is not None:
-        calculation.inputs = calculation_update.inputs
+        calculation.inputs = inputs
         calculation.result = calculation.get_result()
-    calculation.updated_at = datetime.utcnow()
-    db.commit()
-    db.refresh(calculation)
+        calculation.updated_at = datetime.utcnow()
+        db.commit()
+        db.refresh(calculation)
+
     return calculation
 
 # Delete a Calculation
