@@ -4,7 +4,7 @@ from fastapi import HTTPException, status
 from app.auth.dependencies import get_current_user, get_current_active_user
 from app.schemas.user import UserResponse
 from app.models.user import User
-from uuid import uuid4
+from uuid import UUID, uuid4
 from datetime import datetime, timezone
 
 # Sample user data dictionaries for testing
@@ -103,3 +103,45 @@ def test_get_current_active_user_inactive(mock_verify_token):
 
     assert exc_info.value.status_code == status.HTTP_400_BAD_REQUEST
     assert exc_info.value.detail == "Inactive user"
+
+# get current user "sub" elif return statement
+def test_get_current_user_with_sub():
+    fake_token = "fake.jwt.token"
+    fake_user_id = "123e4567-e89b-12d3-a456-426614174000"
+
+    with patch("app.auth.dependencies.User.verify_token", return_value={"sub": fake_user_id}):
+        user = get_current_user(token=fake_token)
+
+    assert user.id == UUID(fake_user_id)
+    assert user.username == "unknown"
+
+# get current user "isinstance(token_data, UUID)" elif return statement
+def test_get_current_user_with_uuid():
+    fake_token = "fake.jwt.token"
+    fake_uuid = UUID("123e4567-e89b-12d3-a456-426614174000")
+
+    with patch("app.auth.dependencies.User.verify_token", return_value=fake_uuid):
+        user = get_current_user(token=fake_token)
+
+    assert isinstance(user, UserResponse)
+    assert user.id == fake_uuid
+    assert user.username == "unknown"
+    assert user.email == "unknown@example.com"
+    assert user.first_name == "Unknown"
+    assert user.last_name == "User"
+    assert user.is_active is True
+    assert user.is_verified is False
+    assert isinstance(user.created_at, datetime)
+    assert isinstance(user.updated_at, datetime)
+
+# get current user "raise credentials_exception" else statement
+def test_get_current_user_invalid_token_type():
+    fake_token = "invalid.token.payload"
+
+    # Force verify_token to return an invalid type, like an int or list
+    with patch("app.auth.dependencies.User.verify_token", return_value=123):
+        with pytest.raises(HTTPException) as exc_info:
+            get_current_user(token=fake_token)
+
+    assert exc_info.value.status_code == 401
+    assert exc_info.value.detail == "Could not validate credentials"
