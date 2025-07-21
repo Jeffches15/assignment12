@@ -21,16 +21,15 @@ Running 'pytest' runs every test function in every test file, but I split this u
 
 - pytest -v -s tests/integration/test_user.py
 - pytest -v -s tests/integration/test_user.py --preserve-db (check data in PostgreSQL database)
-- pytest -v -s tests/integration/test_calculation.py *NEW*
+- pytest -v -s tests/integration/test_calculation.py
    - testing Calculation model
 - pytest -v -s tests/integration/test_schema_base.py
-- pytest -v -s tests/integration/test_schema_calculation.py *NEW*
+- pytest -v -s tests/integration/test_calculation_schema.py
    - testing CalculationCreate and CalculationRead
-- pytest -v -s tests/integration/test_calculation_factory.py *NEW*
-   - testing CalculationFactory (create_calculation method)
+- pytest -v -s tests/integration/test_user_schema
+   - testing UserCreate
 - pytest -v -s tests/integration/test_user_auth.py
 - pytest -v -s tests/integration/test_user_auth.py --preserve-db (check data in PostgreSQL)
-- pytest -v -s tests/integration/test_fastapi_calculator.py
 - pytest -v -s tests/integration/test_dependencies.py
 - pytest -v -s tests/integration/test_database.py
 - pytest -v -s tests/e2e/test_e2e.py
