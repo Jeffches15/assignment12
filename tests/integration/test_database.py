@@ -7,6 +7,8 @@ from sqlalchemy.orm.session import Session
 import importlib
 import sys
 
+from app.database import get_db
+
 DATABASE_MODULE = "app.database"
 
 @pytest.fixture
@@ -53,3 +55,16 @@ def test_get_sessionmaker(mock_settings):
     engine = database.get_engine()
     SessionLocal = database.get_sessionmaker(engine)
     assert isinstance(SessionLocal, sessionmaker)
+
+# testing get_db()
+def test_get_db_yields_session(monkeypatch):
+    gen = get_db()
+    db_session = next(gen)  # should yield a Session
+
+    assert isinstance(db_session, Session)
+
+    # Now advance the generator to trigger the `finally` block that closes the session
+    try:
+        next(gen)
+    except StopIteration:
+        pass
